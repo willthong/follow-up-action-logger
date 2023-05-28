@@ -42,7 +42,6 @@ def auth(creds):
         else:
             flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
             creds = flow.run_local_server(port=0)
-            return creds
         # Save the credentials for the next run
         with open("token.json", "w") as token:
             token.write(creds.to_json())
@@ -94,6 +93,7 @@ def main():
             if header["name"] == "Date":
                 date = header["value"][:-15]
                 date = datetime.strptime(date, "%a, %d %B %Y")
+                date_format = date.strftime("%Y-%m-%d")
         body = email["payload"]["parts"][0]["body"]["data"].strip()
         body_decoded = str(base64.urlsafe_b64decode(body))
 
@@ -107,7 +107,7 @@ def main():
                 # Function to write date, name and address into the Google sheet
                 write_to_sheet(creds, date, name, address)
             else:
-                print(f"Old email from {date} skipped.")
+                print(f"Old email from {date_format} skipped.")
 
 
 def write_to_sheet(creds, date, name, address):
