@@ -13,7 +13,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 import base64
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 GMAIL_QUERY = (
     "subject:'Labour Doorstep - Follow-up actions from your canvassing session'"
@@ -70,6 +70,7 @@ def main():
         .execute()
     )
     email_messages = message_response.get("messages")
+    email_messages.reverse()
 
     # Find last action date
     sheet_service = build("sheets", "v4", credentials=creds)
@@ -102,8 +103,9 @@ def main():
             name = action.group(1)
             address = action.group(2)
 
-            # Check if the action date is later than last_action_date
-            if date > last_action_date:
+            # Check if the action date is later than last_action_date, accounting for
+            # 2-day lag
+            if date > last_action_date + timedelta(days=2):
                 # Function to write date, name and address into the Google sheet
                 write_to_sheet(creds, date, name, address)
             else:
@@ -116,7 +118,8 @@ def write_to_sheet(creds, date, name, address):
     # Call the Sheets API
     sheet = sheet_service.spreadsheets()
 
-    date = date.strftime("%Y-%m-%d")
+    # Set date, accounting for 2 day lag
+    date = (date - timedelta(days=2)).strftime("%Y-%m-%d")
     values = [
         [date, name, address],
     ]
